@@ -1,5 +1,10 @@
 # AI Python Sandbox 🔐
 
+🚀 **Live Demo:** [https://ai-python-sandbox.streamlit.app](https://ai-python-sandbox.streamlit.app)  
+💻 **Code on GitHub:** [https://github.com/sundysd/ai-python-sandbox](https://github.com/sundysd/ai-python-sandbox)
+
+A Streamlit project showcasing Python AI experiments, including interactive examples and auto-debug features.
+
 A secure, AI-powered Python code execution environment designed for safe experimentation, learning, and prototyping. Built with AST-based validation, sandboxed execution, and intelligent debugging capabilities.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
