@@ -11,6 +11,10 @@ import io, csv
 if "history" not in st.session_state:
     st.session_state.history = []
 
+# Ensure session logs exist
+if "user_logs" not in st.session_state:
+    st.session_state.user_logs = []
+
 st.sidebar.title("Controls")
 
 # OpenAI key helper
@@ -64,13 +68,14 @@ if st.sidebar.button("Clear history"):
     st.session_state.history = []
     st.sidebar.success("History cleared")
 
-if st.sidebar.button("View logs"):
-    try:
-        with open("data/logs.txt", "r", encoding="utf-8") as lf:
-            st.sidebar.text_area("Logs", lf.read(), height=260)
-    except FileNotFoundError:
-        st.sidebar.warning("No logs yet")
+if st.sidebar.button("Clear session logs"):
+    st.session_state.user_logs = []
+    st.sidebar.success("Session logs cleared")
 
+if st.sidebar.button("View logs"):
+    # Show session logs (user-specific)
+    st.sidebar.subheader("Session Logs")
+    st.sidebar.text_area("Logs", "\n".join(st.session_state.user_logs), height=260)
 
 st.title("AI Code Executor")
 
