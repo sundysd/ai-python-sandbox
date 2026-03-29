@@ -2,5 +2,9 @@
   {
     "user": "print 1 to 10",
     "assistant": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+  },
+  {
+    "user": "print 1 to 5\n",
+    "assistant": "1\n2\n3\n4\n5\n"
   }
 ]

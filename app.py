@@ -15,13 +15,6 @@ st.sidebar.markdown(
     " (opens in a new tab)", unsafe_allow_html=True
 )
 
-if "has_openai_key" not in st.session_state:
-    st.session_state.has_openai_key = False
-
-if st.sidebar.checkbox("I already have key", value=True):
-    st.session_state.has_openai_key = True
-else:
-    st.session_state.has_openai_key = False
 
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
@@ -88,30 +81,31 @@ st.title("AI Code Executor")
 if "openai_api_key" not in st.session_state:
     st.session_state.openai_api_key = ""
 
-openai_api_key = ""
-if st.session_state.has_openai_key:
-    openai_api_key = st.text_input("OpenAI API Key", type="password", value=st.session_state.openai_api_key)
-    st.caption("Go to OpenAI console, create key, paste into this box")
-    st.caption("API Key only stored in session (not persisted to disk). Refresh page loses key for safety.")
+# OpenAI API Key input (session-safe)
+openai_api_key = st.text_input(
+    "OpenAI API Key",
+    type="password",
+    value=st.session_state.get("openai_api_key", ""),
+    help="Go to OpenAI console, create key, paste into this box. Key is only stored in session; refresh loses it."
+)
 
-    if st.button("📖 Show OpenAI API Key Setup Guide"):
-        st.session_state.show_api_guide = not st.session_state.get("show_api_guide", False)
+# Store the input in session state
+st.session_state.openai_api_key = openai_api_key
 
-    if st.session_state.get("show_api_guide", False):
-        st.markdown("""
-        **OpenAI API Key Setup - 5 Steps:**
-        
-        1. Open https://platform.openai.com/account/api-keys
-        2. Sign up / log in to your OpenAI account
-        3. Click `Create new secret key`
-        4. Copy the key (shown only once - save it immediately!)
-        5. Paste to the input box above and run
-        
-        📚 Official Guide: https://platform.openai.com/docs/guides/getting-started
-        """)
-else:
-    st.info("Click the link in the sidebar to get your OpenAI API Key, check 'I already have key', then enter it here.")
-
+# Optional: show setup guide
+if st.button("📖 Show OpenAI API Key Setup Guide"):
+    st.markdown("""
+    **OpenAI API Key Setup - 5 Steps:**
+    
+    1. Open https://platform.openai.com/account/api-keys
+    2. Sign up / log in to your OpenAI account
+    3. Click `Create new secret key`
+    4. Copy the key (shown only once - save it immediately!)
+    5. Paste to the input box above and run
+    
+    📚 Official Guide: https://platform.openai.com/docs/guides/getting-started
+    """)
+    
 user_input = st.text_area("Enter instruction:")
 
 if openai_api_key:
