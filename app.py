@@ -64,6 +64,13 @@ if "openai_api_key" not in st.session_state or not st.session_state.openai_api_k
 else:
     st.sidebar.success("OpenAI key status: set")
 
+max_retries = st.sidebar.selectbox(
+    "Max Auto-Debug Retries",
+    [1, 2, 3, 5, 10],
+    index=1,
+    help="Number of times the AI will attempt to fix failed code"
+)    
+
 if st.sidebar.button("Clear history"):
     st.session_state.history = []
     st.sidebar.success("History cleared")
@@ -109,6 +116,17 @@ if st.button("📖 Show OpenAI API Key Setup Guide"):
 
 user_input = st.text_area("Enter instruction:")
 
+st.markdown(
+    """
+    **Example instructions you can try:**  
+    - `print numbers from 1 to 10`  
+    - `add 1, 2, 3, 5, 7 together`  
+    - `create a list of squares from 1 to 5`  
+    - `define a function that returns factorial of a number`
+    """,
+    unsafe_allow_html=True
+)
+
 if openai_api_key:
     st.session_state.openai_api_key = openai_api_key
 
@@ -128,6 +146,9 @@ if st.button("Run"):
         # Save key in session state (page session only, refresh clears)
         st.session_state.openai_api_key = openai_api_key
 
+        # Initialize code and output
+        code = None
+        output = ""
         st.info("Generating Python code...")
         try:
             code = generate_code(openai_api_key, user_input, model=model, max_tokens=max_tokens, temperature=temperature)
@@ -136,7 +157,6 @@ if st.button("Run"):
         except Exception as e:
             st.error(f"Code generation failed: {e}")
             log_error(f"Code generation failed: {e}")
-            code = None
 
         if not code:
             st.error("No generated code to execute.")
@@ -147,56 +167,43 @@ if st.button("Run"):
                 st.error(f"Generated code is unsafe: {msg}")
                 log_error(f"Unsafe generated code: {msg}")
             else:
-                # Execute safely
-                try:
-                    success, output = execute_code(code)
-                    if success:
-                        st.success("✅ Execution Result:")
-                        st.text(output)
-                        log_info("Execution succeeded")
-                    else:
-                        st.error("❌ Execution failed:")
-                        st.text(output)
-                        log_error(f"Execution failed: {output}")
-                        st.info("Attempting auto-debug...")
-                        fixed_code = auto_debug(openai_api_key, code, output)
-                        st.code(fixed_code, language="python")
-                        success2, output2 = execute_code(fixed_code)
-                        if success2:
-                            st.success("✅ Auto-Debug Execution Result:")
-                            st.text(output2)
-                            log_info("Auto-debug succeeded")
-                        else:
-                            st.error("❌ Auto-Debug also failed:")
-                            st.text(output2)
-                            log_error(f"Auto-debug failed: {output2}")
-
-                except Exception as e:
-                    st.error(f"Execution failed unexpectedly: {e}")
-                    log_error(f"Execution failed unexpectedly: {e}")
-                    st.info("Attempting auto-debug...")
+                # Execute with retries
+                current_code = code
+                for attempt in range(1, max_retries + 1):
                     try:
-                        fixed_code = auto_debug(openai_api_key, code, str(e))
-                        st.code(fixed_code, language="python")
-                        success2, output2 = execute_code(fixed_code)
-                        if success2:
-                            st.success("✅ Auto-Debug Execution Result:")
-                            st.text(output2)
-                            log_info("Auto-debug succeeded after unexpected failure")
+                        success, output = execute_code(current_code)
+                        if success:
+                            st.success(f"✅ Execution Result (Attempt {attempt}):")
+                            st.text(output)
+                            log_info(f"Execution succeeded on attempt {attempt}")
+                            break
                         else:
-                            st.error("❌ Auto-Debug also failed:")
-                            st.text(output2)
-                            log_error(f"Auto-debug also failed: {output2}")
-                    except Exception as e2:
-                        st.error(f"Auto-debug failed unexpectedly: {e2}")
-                        log_error(f"Auto-debug failed unexpectedly: {e2}")
+                            st.warning(f"❌ Execution failed on attempt {attempt}: {output}")
+                            log_error(f"Execution failed on attempt {attempt}: {output}")
+                            if attempt < max_retries:
+                                st.info(f"Attempting auto-debug (Attempt {attempt})...")
+                                current_code = auto_debug(openai_api_key, current_code, output)
+                                st.code(current_code, language="python")
+                            else:
+                                st.error("❌ Auto-debug retries exhausted")
+                    except Exception as e:
+                        st.error(f"Execution failed unexpectedly on attempt {attempt}: {e}")
+                        log_error(f"Execution failed unexpectedly on attempt {attempt}: {e}")
+                        if attempt < max_retries:
+                            st.info(f"Attempting auto-debug after exception (Attempt {attempt})...")
+                            current_code = auto_debug(openai_api_key, current_code, str(e))
+                            st.code(current_code, language="python")
+                        else:
+                            st.error("❌ Auto-debug retries exhausted due to exceptions")
 
-        # save the history of interactions
+        # Save the interaction in session history
         st.session_state.history.append({
             "user": user_input,
-            "assistant": output if 'output' in locals() else ""
+            "assistant": output
         })
-        log_info("Interaction saved to history")
+        log_info("Interaction saved to session history")
+
+
 
 # show last 10 interactions
 if st.session_state.history:

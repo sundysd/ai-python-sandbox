@@ -8,8 +8,12 @@ import sys
 # Safe builtins for sandbox
 SAFE_BUILTINS = {
     "print": print,
+    "sum": sum,
     "range": range,
-    "len": len
+    "len": len,
+    "min": min,
+    "max": max,
+    "abs": abs,
 }
 
 class TimeoutException(Exception):
