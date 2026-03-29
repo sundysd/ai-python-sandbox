@@ -164,7 +164,7 @@ if st.button("Run"):
                         st.text(output)
                         log_error(f"Execution failed: {output}")
                         st.info("Attempting auto-debug...")
-                        fixed_code = auto_debug(code, output)
+                        fixed_code = auto_debug(openai_api_key, code, output)
                         st.code(fixed_code, language="python")
                         success2, output2 = execute_code(fixed_code)
                         if success2:
@@ -181,7 +181,7 @@ if st.button("Run"):
                     log_error(f"Execution failed unexpectedly: {e}")
                     st.info("Attempting auto-debug...")
                     try:
-                        fixed_code = auto_debug(code, str(e))
+                        fixed_code = auto_debug(openai_api_key, code, str(e))
                         st.code(fixed_code, language="python")
                         success2, output2 = execute_code(fixed_code)
                         if success2:
@@ -196,11 +196,11 @@ if st.button("Run"):
                         st.error(f"Auto-debug failed unexpectedly: {e2}")
                         log_error(f"Auto-debug failed unexpectedly: {e2}")
 
-        # 保存历史，便于复现
+        # save the history of interactions
         add_to_history(user_input, output if 'output' in locals() else "")
         log_info("Interaction saved to history")
 
-# 展示历史记录（最后 10 条）
+# show history
 if history:
     st.subheader("History")
     st.table([
