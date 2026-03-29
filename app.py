@@ -5,6 +5,11 @@ from debugger import auto_debug
 from validator import is_safe
 from memory import add_to_history, load_history, clear_history
 from logger import log_info, log_error
+import io, csv
+
+# Ensure session history exists
+if "history" not in st.session_state:
+    st.session_state.history = []
 
 st.sidebar.title("Controls")
 
@@ -56,7 +61,7 @@ else:
     st.sidebar.success("OpenAI key status: set")
 
 if st.sidebar.button("Clear history"):
-    clear_history()
+    st.session_state.history = []
     st.sidebar.success("History cleared")
 
 if st.sidebar.button("View logs"):
@@ -66,15 +71,6 @@ if st.sidebar.button("View logs"):
     except FileNotFoundError:
         st.sidebar.warning("No logs yet")
 
-history = load_history()
-if history:
-    import io, csv
-    if st.sidebar.button("Export history CSV"):
-        output = io.StringIO()
-        writer = csv.DictWriter(output, fieldnames=["user", "assistant"])
-        writer.writeheader()
-        writer.writerows(history)
-        st.sidebar.download_button("Download CSV", output.getvalue().encode("utf-8"), "history.csv", "text/csv")
 
 st.title("AI Code Executor")
 
@@ -105,7 +101,7 @@ if st.button("📖 Show OpenAI API Key Setup Guide"):
     
     📚 Official Guide: https://platform.openai.com/docs/guides/getting-started
     """)
-    
+
 user_input = st.text_area("Enter instruction:")
 
 if openai_api_key:
@@ -191,13 +187,16 @@ if st.button("Run"):
                         log_error(f"Auto-debug failed unexpectedly: {e2}")
 
         # save the history of interactions
-        add_to_history(user_input, output if 'output' in locals() else "")
+        st.session_state.history.append({
+            "user": user_input,
+            "assistant": output if 'output' in locals() else ""
+        })
         log_info("Interaction saved to history")
 
-# show history
-if history:
+# show last 10 interactions
+if st.session_state.history:
     st.subheader("History")
     st.table([
         {"Instruction": item["user"], "Result": item["assistant"]}
-        for item in history[-10:]
+        for item in st.session_state.history[-10:]
     ])
